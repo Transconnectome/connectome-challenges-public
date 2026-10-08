@@ -1,0 +1,9 @@
+# 설치·실행 확인: Python 3.11 macOS arm64 (2026-09-26), Python 3.12 Linux aarch64 (2026-10-08)
+brainiak==0.12
+nilearn>=0.10.1
+nibabel>=5
+numpy>=1.24
+scipy>=1.10
+pandas>=2
+matplotlib>=3.7
+jupyter
