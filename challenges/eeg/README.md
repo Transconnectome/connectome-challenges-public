@@ -9,6 +9,7 @@
 | `generate_synthetic_eeg.py` | 합성 뇌파를 만드는 프로그램 |
 | `eeg_synth.py` | 생성에 쓰는 함수 모음 |
 | `eeg_synthetic_example.ipynb` | 예제 노트북: 신호 그리기 → 큰 파형 찾기 → 두피 분포 → 좌우 눈 움직임 → 정답 비교 |
+| `eeg_real_data.ipynb` | [실제 공개 데이터](../eeg.md#실제-공개-데이터로-확인하기) 노트북: PhysioNet EEGBCI 눈 뜬 휴지기 기록(run 1) 받기 → 채널 이름·단위 맞추기 → 같은 방법으로 깜빡임 찾기 → 두피 분포 → 합성과 비교 |
 | `requirements.txt` | 필요한 패키지 |
 
 ## 만들기

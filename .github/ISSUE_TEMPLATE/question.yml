@@ -1,0 +1,38 @@
+name: 질문하기
+description: 설치나 실행이 막혔거나 과제 내용이 궁금할 때
+title: "[질문] "
+labels: [question]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        이슈는 누구나 볼 수 있습니다. 개인정보(전화번호, 학번, 메일)는 적지 마세요. 이름도 적지 않아도 됩니다.
+        답변은 연구실 구성원이 가능한 범위에서 드리며, 응답 시간은 보장하지 않습니다.
+  - type: dropdown
+    id: challenge
+    attributes:
+      label: 어느 챌린지인가요?
+      options:
+        - EEG · 뇌파에서 눈 깜빡임 흔적 찾아보기
+        - fMRI · 뇌 영역의 신호는 함께 움직일까?
+        - 시작 안내·설치
+        - 기타
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: 무엇이 궁금하거나 막혔나요?
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: 실행한 명령과 나온 메시지
+      description: 오류 메시지는 잘라내지 말고 그대로 붙여 넣어 주세요.
+      render: text
+  - type: input
+    id: environment
+    attributes:
+      label: 환경
+      placeholder: "예: macOS 14 (Apple 칩), Python 3.12"

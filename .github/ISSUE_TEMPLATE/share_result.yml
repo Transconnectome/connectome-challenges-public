@@ -1,0 +1,64 @@
+name: 결과 공유하기
+description: 챌린지를 해 본 결과를 공유하고 의견을 받고 싶을 때
+title: "[결과] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        결과 공유는 선택입니다. 그림과 숫자는 공유해도 되지만 받은 데이터 파일은 올리지 마세요. 이슈는 누구나 볼 수 있으니 개인정보(전화번호, 학번, 메일)는 적지 마세요. 이름도 적지 않아도 됩니다.
+  - type: dropdown
+    id: challenge
+    attributes:
+      label: 어느 챌린지인가요?
+      options:
+        - EEG · 뇌파에서 눈 깜빡임 흔적 찾아보기
+        - fMRI · 뇌 영역의 신호는 함께 움직일까?
+        - 둘 다
+    validations:
+      required: true
+  - type: dropdown
+    id: data
+    attributes:
+      label: 사용한 데이터
+      options:
+        - 합성 데이터만
+        - 합성 데이터 + 실제 공개 데이터
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: 결과 링크
+      description: 본인 GitHub 저장소나 노트북 공유 링크
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: 찾은 것과 그 한계
+      description: 챌린지 문서의 "정리해 둘 것"을 3–5문장으로 요약해 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: citation
+    attributes:
+      label: 실제 공개 데이터 인용
+      description: 실제 공개 데이터를 썼다면 챌린지 문서의 "이용 조건과 인용"에 적힌 인용을 붙여 주세요. 합성 데이터만 썼다면 "없음".
+    validations:
+      required: true
+  - type: textarea
+    id: ai_use
+    attributes:
+      label: AI 도구에 맡긴 부분
+      description: 쓰지 않았다면 "없음"이라고 적어 주세요.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 환경
+      placeholder: "예: macOS 14 (Apple 칩), Python 3.12, MNE 1.13"
+  - type: textarea
+    id: feedback
+    attributes:
+      label: 받고 싶은 의견

@@ -8,6 +8,7 @@
 | --- | --- |
 | `generate_synthetic_fmri.py` | [BrainIAK fmrisim](https://brainiak.org/docs/brainiak.utils.html#module-brainiak.utils.fmrisim)으로 4D fMRI 영상을 만들고 머리 움직임을 더하는 프로그램 |
 | `fmri_synthetic_example.ipynb` | 예제 노트북: 영역별 시계열 → 상관계수 → 움직임 확인 → 움직임 시점 제거 → 정답 비교 |
+| `fmri_real_data.ipynb` | 실제 공개 데이터 노트북: 같은 분석을 nilearn이 내려받는 OpenNeuro ds000228 전처리본(4명)에 적용. [챌린지 안내](../fmri.md#실제-공개-데이터로-확인하기) 참고 |
 | `requirements.txt` | 필요한 패키지 |
 
 ## 만들기

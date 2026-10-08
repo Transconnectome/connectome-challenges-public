@@ -1,0 +1,32 @@
+name: 문서 오류 제보
+description: 안내와 실제 결과가 다르거나, 틀린 내용·깨진 링크를 찾았을 때
+title: "[문서] "
+labels: [documentation]
+body:
+  - type: markdown
+    attributes:
+      value: 이슈는 누구나 볼 수 있습니다. 개인정보(전화번호, 학번, 메일)는 적지 마세요. 이름도 적지 않아도 됩니다.
+  - type: input
+    id: file
+    attributes:
+      label: 파일과 위치
+      placeholder: "예: challenges/eeg.md의 '스스로 확인하기'"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: 무엇이 다른가요?
+      description: 문서에 적힌 것과 실제로 본 것을 함께 적어 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: 실행한 명령과 나온 메시지
+      render: text
+  - type: input
+    id: environment
+    attributes:
+      label: 환경
+      placeholder: "예: Ubuntu 22.04 (WSL), Python 3.11"
