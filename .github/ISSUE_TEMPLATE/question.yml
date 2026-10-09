@@ -29,7 +29,7 @@ body:
     id: command
     attributes:
       label: 실행한 명령과 나온 메시지
-      description: 오류 메시지는 잘라내지 말고 그대로 붙여 넣어 주세요.
+      description: 오류 메시지는 잘라내지 말고 그대로 붙여 넣어 주세요. 단, 경로에 든 내 사용자 이름은 지워 주세요.
       render: text
   - type: input
     id: environment

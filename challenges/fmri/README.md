@@ -20,7 +20,7 @@ python generate_synthetic_fmri.py                           # data/ 에 생성, 
 python generate_synthetic_fmri.py --seed 7 --out data_seed7   # 다른 데이터
 ```
 
-생성 중에 `EstimationWarning` 경고가 수백 줄 나올 수 있습니다. 마지막에 정답 상관계수 줄이 나오면 성공입니다. 같은 seed로 만들면 항상 같은 데이터가 나옵니다. `data/`는 약 22 MB입니다.
+생성 중에 `EstimationWarning` 경고가 수백 줄 나올 수 있습니다. 마지막 줄에는 정답 상관계수가 나옵니다. 미리 보고 싶지 않다면 "저장 위치" 줄이 나왔는지만 확인하세요. 같은 seed로 만들면 항상 같은 데이터가 나옵니다. `data/`는 약 22 MB입니다.
 
 | 만들어지는 파일 | 내용 |
 | --- | --- |

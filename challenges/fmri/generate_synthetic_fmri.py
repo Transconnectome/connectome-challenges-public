@@ -1,14 +1,12 @@
 """합성 fMRI 데이터 생성기 (BrainIAK fmrisim + 머리 움직임 아티팩트).
 
-실제 데이터를 공유할 수 없을 때 쓰는 연습용 데이터입니다. 영역 사이의 신호 구조를
+연습용 합성 데이터입니다. 영역 사이의 신호 구조를
 정답으로 알고 있으므로, 분석 결과를 정답과 비교할 수 있습니다.
 
     python generate_synthetic_fmri.py                          # 기본값: A·B 연결, C 독립
-    python generate_synthetic_fmri.py --seed 7                 # 다른 참가자용 변형
-    python generate_synthetic_fmri.py --stats fmri_stats.json  # 실제 데이터의 그룹 통계로 생성
+    python generate_synthetic_fmri.py --seed 7                 # 다른 seed로 만든 데이터
     python generate_synthetic_fmri.py --voxel-mm 3 --n-volumes 400   # 더 큰 데이터
 
-fmri_stats.json은 extract_fmri_stats.py로 만든 그룹 요약 통계입니다.
 
 출력 (data/):
     bold.nii.gz        4D fMRI 볼륨 (x, y, z, 시간)
@@ -122,7 +120,7 @@ def nearest_psd(corr):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--stats", type=Path, help="extract_fmri_stats.py가 만든 JSON (연구원용. 생략하면 기본값으로 생성)")
+    parser.add_argument("--stats", type=Path, help="선택: 그룹 요약 통계 JSON. 연습 과제에는 필요 없고 공개본에는 통계 파일이 없습니다. 생략하면 기본값으로 생성")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--voxel-mm", type=float, default=VOXEL_MM,
                         help="복셀 크기. 3이면 64×76×64 (데이터 약 8배)")
@@ -232,7 +230,7 @@ def main():
         "note": "잡음과 움직임을 넣기 전, 혈류 반응까지 반영한 영역 간 상관계수입니다.",
         "true_correlation": pairs(truth),
         "structure": ("영역 간 상관은 실제 데이터의 그룹 평균 상관을 목표로 만들었습니다."
-                      if stats else "A와 B는 공통 신경 신호를 공유하고, C는 독립입니다."),
+                      if stats else "A와 B는 공통 신경 신호를 공유하고, C는 A·B와 따로 만든 신호입니다. 시점이 200개뿐이라 C의 정답 상관도 정확히 0은 아니고 0 근처입니다."),
         "roi_labels": {n: k for k, n in enumerate(names, start=1)},
         "motion_spike_volumes": spikes.tolist(),
         "roi_centers_voxel": {n: c.tolist() for n, c in zip(names, centers)},
@@ -247,7 +245,7 @@ def main():
 
     size_gb = data.size * 4 / 1e9
     print(f"저장 위치: {args.out.resolve()} ({time.time() - start:.0f}초, "
-          f"{'x'.join(map(str, dims))}×{n_tr}, float32 {size_gb:.2f} GB)")
+          f"{'×'.join(map(str, dims))}×{n_tr}, float32 {size_gb:.2f} GB)")
     print("정답 상관계수:", pairs(truth))
 
 

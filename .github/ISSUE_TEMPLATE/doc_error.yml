@@ -24,9 +24,10 @@ body:
     id: command
     attributes:
       label: 실행한 명령과 나온 메시지
+      description: 경로에 든 내 사용자 이름은 지워 주세요.
       render: text
   - type: input
     id: environment
     attributes:
       label: 환경
-      placeholder: "예: Ubuntu 22.04 (WSL), Python 3.11"
+      placeholder: "예: Ubuntu 24.04 (WSL), Python 3.12"

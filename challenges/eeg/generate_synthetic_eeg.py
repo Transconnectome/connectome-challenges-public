@@ -1,10 +1,8 @@
 """합성 EEG 생성기: 배경 뇌파 + 눈 깜빡임 + 좌우 눈 움직임(함정).
 
     python generate_synthetic_eeg.py                         # 기본값(예시 통계)으로 생성
-    python generate_synthetic_eeg.py --stats eeg_stats.json  # 실제 데이터의 그룹 통계로 생성
     python generate_synthetic_eeg.py --seed 7 --out data_seed7
 
-eeg_stats.json은 extract_eeg_stats.py로 만든 그룹 요약 통계입니다.
 
 출력 (data/):
     eeg_raw.fif        19채널 EEG, 평균 기준 (MNE로 읽으면 V 단위)
@@ -58,7 +56,7 @@ def event_times(rate_per_min, duration, min_gap, rng, margin=1.0, avoid=()):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--stats", type=Path, help="extract_eeg_stats.py가 만든 JSON (연구원용. 생략하면 기본값으로 생성)")
+    parser.add_argument("--stats", type=Path, help="선택: 그룹 요약 통계 JSON. 연습 과제에는 필요 없고 공개본에는 통계 파일이 없습니다. 생략하면 기본값으로 생성")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--duration", type=float, default=DURATION)
     parser.add_argument("--out", type=Path, default=Path(__file__).parent / "data")
@@ -100,7 +98,7 @@ def main():
                          "direction": "left" if direction > 0 else "right",
                          "f7_amplitude_uv": round(float(amp), 1)})
 
-    # 평균 기준: 추출기(extract_eeg_stats.py)와 같은 기준 전극으로 맞춤
+    # 모든 채널의 평균을 기준 전극으로 씀
     data -= data.mean(axis=0, keepdims=True)
 
     # 저장
@@ -122,7 +120,7 @@ def main():
     }, ensure_ascii=False, indent=2))
     print(f"저장 위치: {args.out.resolve()}")
     print(f"눈 깜빡임 {blink_t.size}회, 좌우 눈 움직임 {len(saccades)}회, "
-          f"통계: {stats['source']['method']}")
+          f"요약 통계: {'기본값' if stats['source']['method'] == 'default' else stats['source']['method']}")
 
 
 if __name__ == "__main__":

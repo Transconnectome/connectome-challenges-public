@@ -52,7 +52,7 @@ def avg_ref_topography(topo):
 
 
 def default_stats():
-    """실제 데이터 없이 쓰는 기본값 (B 방식). 값은 문헌상 전형적인 범위에서 고른 예시다."""
+    """기본값. 값은 문헌상 전형적인 범위에서 고른 예시다."""
     pos = montage().get_positions()["ch_pos"]
     xyz = np.array([pos[c] for c in CHANNELS])
     dist = np.linalg.norm(xyz[:, None] - xyz[None], axis=-1)

@@ -6,10 +6,20 @@
 
 ## 챌린지
 
-| 챌린지 | 무엇을 배우나 | 난이도 | 걸리는 시간 (추정) |
-| --- | --- | --- | --- |
-| [EEG · 뇌파에서 눈 깜빡임 흔적 찾아보기](challenges/eeg.md) | 뇌파에 섞여 든 눈 깜빡임(아티팩트)을 찾고, 그것이 뇌가 아니라 눈에서 왔다는 근거를 채널 위치·모양·부호로 설명하기 | L1 | 2–3시간 + 실제 데이터 1시간 |
-| [fMRI · 뇌 영역의 신호는 함께 움직일까?](challenges/fmri.md) | 두 영역의 상관을 계산하고, 머리 움직임이 관계없는 영역 사이에 가짜 상관을 만드는 함정을 찾아 보정하기. 상관이 인과가 아닌 이유 설명하기 | L1 | 2–3시간 + 실제 데이터 1시간 |
+| 챌린지 | 무엇을 배우나 | 난이도 |
+| --- | --- | --- |
+| [EEG · 뇌파에서 눈 깜빡임 흔적 찾아보기](challenges/eeg.md) | 뇌파에 섞여 든 눈 깜빡임(아티팩트)을 찾고, 그것이 뇌가 아니라 눈에서 왔다는 근거를 채널 위치·모양·부호로 설명하기 | L1 |
+| [fMRI · 뇌 영역의 신호는 함께 움직일까?](challenges/fmri.md) | 두 영역의 상관을 계산하고, 머리 움직임이 관계없는 영역 사이에 가짜 상관을 만드는 함정을 찾아 보정하기. 상관이 인과가 아닌 이유 설명하기 | L1 |
+
+**걸리는 시간 (추정)**: 챌린지마다 합성 데이터 과제 2–3시간, 실제 공개 데이터 단계(선택) 약 1시간. **L1**은 안내를 따라 실행하고 본 것을 설명하는 수준입니다. 학년이나 학위에 따른 참가 제한이 아닙니다.
+
+![EEG 챌린지 · 눈 깜빡임 찾기 — 뇌파의 큰 파형은 뇌일까, 눈일까? 흐름: 1 합성 뇌파 생성, 2 큰 파형 찾기, 3 눈에서 왔나, 4 정답과 비교. 선택 단계로 실제 공개 뇌파로 확인. 오른쪽 위 배지는 L1, 합성 과제 2–3시간.](assets/challenge_eeg.png)
+
+![fMRI 챌린지 · 가짜 상관 찾기 — 함께 움직이면 연결된 걸까? 흐름: 1 세 영역 신호, 2 상관 계산, 3 머리 움직임, 4 빼고 다시 비교. 가운데 강조 문구는 상관은 인과가 아니다. 선택 단계로 실제 공개 fMRI로 확인. 오른쪽 위 배지는 L1, 합성 과제 2–3시간.](assets/challenge_fmri.png)
+
+*그림 오른쪽 위의 시간은 합성 데이터 과제 기준입니다.*
+
+### 이런 그림을 만들게 됩니다
 
 ![합성 뇌파 19채널. 이마 채널(Fp1, Fp2)에서 크게 솟고 뒤쪽 채널로 갈수록 부호가 바뀌는 파형이 눈 깜빡임이다. 빨간 선은 자동으로 찾은 시점.](assets/eeg_blinks.png)
 
@@ -19,14 +29,12 @@
 
 *fMRI 챌린지에서 만드는 그림: 머리가 크게 움직인 순간(위, 빨간 점선 위로 솟은 곳)에 서로 관계없는 영역까지 함께 출렁입니다(아래).*
 
-**L1**은 안내를 따라 실행하고 본 것을 설명하는 수준입니다. 학년이나 학위에 따른 참가 제한이 아닙니다.
-
 ## 진행 순서
 
-1. **설치**: Python 3.11 또는 3.12와 노트북 컴퓨터(GPU 필요 없음)만 있으면 됩니다. [시작 안내](START_HERE.md#4-설치와-첫-실행-30분-안팎)를 따라 설치하고 첫 노트북을 실행합니다.
+1. **설치**: Python 3.11 또는 3.12와 노트북 컴퓨터(GPU 필요 없음)가 필요합니다. macOS·Linux에서 확인했고, Windows는 WSL(Windows에서 Linux를 쓰는 기능)을 권합니다. [시작 안내](START_HERE.md#4-설치와-첫-실행-30분-안팎)를 따라 설치하고 첫 노트북을 실행합니다.
 2. **합성 데이터로 연습**: 컴퓨터로 만든 합성 데이터에는 정답 파일이 함께 들어 있어, 내 분석을 스스로 확인할 수 있습니다.
-3. **실제 공개 데이터로 확인 (선택)**: 누구나 받을 수 있는 공개 데이터(PhysioNet EEGBCI 약 8 MB, OpenNeuro ds000228 약 50 MB)에 같은 분석을 적용하고, 합성 데이터와 무엇이 다른지 설명합니다. 실제 데이터에는 정답이 없고, 데이터마다 이용 조건과 인용 요구가 있습니다(각 챌린지 문서에 적었습니다).
-4. **정리와 공유 (선택)**: 그림·노트북·짧은 설명을 정리하고, 원하면 Issues에 결과를 공유해 의견을 받습니다.
+3. **실제 공개 데이터로 확인 (선택)**: 누구나 받을 수 있는 공개 데이터(PhysioNet EEGBCI 약 8 MB, OpenNeuro ds000228 전처리본과 뇌 지도 합계 약 50 MB)에 같은 분석을 적용하고, 합성 데이터와 무엇이 다른지 설명합니다. 실제 데이터에는 정답이 없고, 데이터마다 이용 조건과 인용 요구가 있습니다(각 챌린지 문서에 적었습니다).
+4. **정리와 공유 (선택)**: 그림·노트북·짧은 설명을 정리하고, 원하면 Issues에 결과를 공유해 의견을 요청할 수 있습니다.
 
 필요한 배경지식은 Python 기초 문법 정도입니다. 뇌 데이터 용어는 문서와 노트북에서 설명합니다.
 
@@ -35,15 +43,17 @@
 ```text
 START_HERE.md        시작 안내: 설치, 첫 실행, 공유·질문 방법, 자주 묻는 질문
 challenges/eeg.md    EEG 챌린지 안내
-challenges/eeg/      EEG 합성 데이터 생성기, 예제 노트북, 실제 데이터 노트북
+challenges/eeg/      EEG 합성 데이터 생성기, 예제 노트북, 실제 데이터 노트북, 합성 데이터 안내(README.md)
 challenges/fmri.md   fMRI 챌린지 안내
-challenges/fmri/     fMRI 합성 데이터 생성기, 예제 노트북, 실제 데이터 노트북
+challenges/fmri/     fMRI 합성 데이터 생성기, 예제 노트북, 실제 데이터 노트북, 합성 데이터 안내(README.md)
 CODE_OF_CONDUCT.md   이슈·댓글에서 지켜 주실 것
+assets/              README 그림
+LICENSE, LICENSE-docs  코드(MIT)·문서(CC BY 4.0) 라이선스
 ```
 
 ## 질문과 공유
 
-막힌 곳, 질문, 결과 공유는 이 저장소의 **Issues** 탭에서 양식(질문하기·결과 공유하기·문서 오류 제보)을 골라 남겨 주세요. 답변은 연구실 구성원이 가능한 범위에서 드리며, 응답 시간은 보장하지 않습니다. 자세한 방법은 [시작 안내](START_HERE.md#5-결과-정리와-공유)에, 지켜 주실 것은 [행동 규칙](CODE_OF_CONDUCT.md)에 있습니다.
+막힌 곳, 질문, 결과 공유는 이 저장소의 **Issues** 탭에서 양식(질문하기·결과 공유하기·문서 오류 제보)을 골라 남겨 주세요. 영어 질문도 됩니다. 답변은 연구실 구성원이 가능한 범위에서 드리며, 응답 시간은 보장하지 않습니다. Issues를 쓰려면 무료 GitHub 계정이 필요합니다. 자세한 방법은 [시작 안내](START_HERE.md#5-결과-정리와-공유)에, 지켜 주실 것은 [행동 규칙](CODE_OF_CONDUCT.md)에 있습니다.
 
 ## 라이선스
 
@@ -51,4 +61,4 @@ CODE_OF_CONDUCT.md   이슈·댓글에서 지켜 주실 것
 
 ## English summary
 
-Hands-on practice challenges for analyzing brain data, made by the Connectome Lab, Department of Psychology, Seoul National University. Each challenge starts with synthetic EEG or fMRI data that comes with ground truth, so you can check your own analysis, and then (optionally) applies the same analysis to openly available datasets (PhysioNet EEGBCI, OpenNeuro ds000228). Everything runs on a laptop with Python 3.11 or 3.12. The documents are in Korean. Questions are welcome in the Issues tab, in English or Korean.
+Hands-on practice challenges for analyzing brain data, made by the Connectome Lab, Department of Psychology, Seoul National University. Each challenge starts with synthetic EEG or fMRI data that comes with ground truth, so you can check your own analysis, and then (optionally) applies the same analysis to openly available datasets (PhysioNet EEGBCI, OpenNeuro ds000228). Everything runs on a laptop with Python 3.11 or 3.12 (tested on macOS and Linux; on Windows, use WSL). It is free and needs no registration; asking questions in the Issues tab needs a free GitHub account. The documents are in Korean. Questions are welcome in English or Korean; replies are best-effort.
