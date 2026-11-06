@@ -31,7 +31,7 @@
 - 노트북이나 데스크톱 컴퓨터. GPU는 필요 없습니다.
 - **Python 3.11 또는 3.12.** 터미널에서 `python3 --version`으로 확인합니다. 없거나 버전이 다르면(예: macOS 기본 3.9, Ubuntu 22.04 기본 3.10) 3.12를 설치하고, 아래 ②에서 `python3` 대신 `python3.12`를 씁니다. macOS는 [python.org](https://www.python.org/downloads/)의 설치 파일을 씁니다. Linux는 배포판 패키지에 3.12가 있으면 그것을 쓰고, 없으면(Ubuntu 22.04 등) Ubuntu 24.04(기본 3.12)를 쓰는 것이 가장 간단합니다. Windows는 아래처럼 WSL의 Ubuntu 24.04를 씁니다.
 - 터미널(macOS: 터미널 앱, Linux: 기본 터미널). 명령을 복사해 붙여 넣을 수 있으면 충분합니다.
-- 인터넷 연결(패키지 설치와 실제 공개 데이터 다운로드용)과 디스크 여유 2 GB 정도. 실제 공개 데이터 단계는 받는 데 몇 분(EEG는 서버가 느려 5분 30초 안팎)이 걸리고 약 60 MB를 더 씁니다.
+- 인터넷 연결(패키지 설치와 실제 공개 데이터 다운로드용)과 디스크 여유 2 GB 정도. 실제 공개 데이터 단계는 받는 데 서버 상태에 따라 30초~6분이 걸리고 약 60 MB를 더 씁니다.
 
 설치와 실행은 macOS(Apple 칩)와 Linux(ARM64)에서 확인했습니다. Windows에서는 확인하지 않았습니다. Windows라면 [WSL](https://learn.microsoft.com/ko-kr/windows/wsl/install)(Windows에서 Linux를 쓰는 기능)을 설치한 뒤 Linux 안내대로 하기를 권합니다. WSL에서는 Ubuntu 24.04(기본 Python 3.12)를 고르세요. Ubuntu 22.04의 기본 Python은 3.10이라 이 안내의 버전과 맞지 않습니다.
 
@@ -86,6 +86,7 @@ jupyter notebook eeg_synthetic_example.ipynb
 | --- | --- |
 | `python3: command not found` | Python을 설치하고 터미널을 다시 엽니다. |
 | `python3 -m venv`가 `ensurepip` 오류로 실패 | Ubuntu·WSL에서는 `sudo apt install python3-venv`로 가상환경 기능을 설치한 뒤 다시 실행합니다. |
+| `No module named 'encodings'` 또는 다른 프로젝트의 패키지가 섞여 보임 | 셸에 `PYTHONPATH`가 설정되어 있을 수 있습니다. `unset PYTHONPATH`를 실행한 뒤 `.venv` 폴더를 지우고 처음부터 다시 만듭니다. |
 | `pip install`이 실패 | `python3 --version`이 3.11이나 3.12인지 확인합니다. 더 새 버전(3.13 이상)이나 옛 버전에서는 일부 패키지가 설치되지 않을 수 있습니다. Linux ARM64라면 C++ 컴파일러를 설치했는지(③) 확인합니다. |
 | `No such file or directory: data/...` | 노트북과 같은 폴더에서 `generate_synthetic_*.py`를 먼저 실행했는지 확인합니다. |
 | `python: command not found` | 가상환경이 꺼진 상태입니다. 저장소 맨 위 폴더에서 `source .venv/bin/activate`를 실행합니다. |

@@ -23,7 +23,7 @@ python generate_synthetic_fmri.py
 jupyter notebook fmri_synthetic_example.ipynb
 ```
 
-`data/` 폴더에 4D 영상(`bold.nii.gz`), 영역 표시(`rois.nii.gz`), 머리 움직임 표(`confounds.tsv`), 정답(`ground_truth.json`)이 20초 안팎으로 만들어집니다. 생성 중에 `EstimationWarning`, `start_params` 같은 경고가 수백 줄 나올 수 있습니다. 마지막 줄에 정답 상관계수가 함께 출력됩니다. 미리 보고 싶지 않다면 "저장 위치" 줄까지만 확인하세요. 그 줄이 나오면 성공입니다. 정답 파일은 분석을 마친 뒤에 여세요. 데이터를 만드는 방법은 [합성 데이터 안내](fmri/README.md)에 있습니다.
+`data/` 폴더에 4D 영상(`bold.nii.gz`), 영역 표시(`rois.nii.gz`), 머리 움직임 표(`confounds.tsv`), 정답(`ground_truth.json`)이 20초~1분 안에 만들어집니다(2026-11-06 Linux ARM64 20코어 컴퓨터에서 약 1분). 생성 중에 `EstimationWarning`, `start_params` 같은 경고가 수백 줄(실측 약 900줄) 나올 수 있습니다. 실패가 아니니 그대로 기다리세요. 마지막 줄에 정답 상관계수가 함께 출력됩니다. 미리 보고 싶지 않다면 "저장 위치" 줄까지만 확인하세요. 그 줄이 나오면 성공입니다. 정답 파일은 분석을 마친 뒤에 여세요. 데이터를 만드는 방법은 [합성 데이터 안내](fmri/README.md)에 있습니다.
 
 ## 과제
 
@@ -66,7 +66,7 @@ jupyter notebook fmri_real_data.ipynb
 노트북의 1·2단계 칸이 `nilearn.datasets.fetch_development_fmri`로 4명(성인 1명, 어린이 3명)의 데이터를 받고, 영역을 고를 Harvard-Oxford 아틀라스(뇌를 이름 붙은 구역으로 나눈 지도)도 받습니다. 데이터는 노트북 옆 `data_real/` 폴더에 저장되며, 다음 실행부터는 다시 받지 않습니다. 저장 위치는 노트북의 `DATA_DIR` 한 줄로 바꿉니다.
 
 - 용량: 내려받는 양 약 50 MB(fMRI 약 24 MB, 아틀라스 압축 파일 약 26 MB), 압축을 푼 뒤 디스크 약 53 MB
-- 시간: 첫 실행 약 4분 30초(그중 아틀라스 내려받기 약 2분 20초), 데이터를 받아 둔 뒤 다시 실행하면 5초 안팎
+- 시간: 첫 실행 약 1~5분(내려받는 속도에 따라 다름. 2026-10-09에는 약 4분 30초, 그중 아틀라스 내려받기 약 2분 20초. 2026-11-06에는 약 1분), 데이터를 받아 둔 뒤 다시 실행하면 5초 안팎
 - 위 값은 2026-10-09에 한 번 잰 값입니다. 내려받는 시간은 네트워크에 따라 크게 다릅니다.
 
 ### 할 일
@@ -136,7 +136,9 @@ jupyter notebook fmri_real_data.ipynb
 - **시계열**: 시점마다 잰 값을 시간 순서로 늘어놓은 것.
 - **FD(framewise displacement)**: 바로 앞 시점과 비교한 머리 움직임의 크기(mm).
 - **scrubbing**: 움직임이 큰 시점을 분석에서 빼는 처리.
-- **detrend·high-pass**: 스캐너에서 생기는 아주 느린 신호 변화(drift)를 없애는 처리.
+- **detrend·high-pass**: 스캐너에서 생기는 아주 느린 신호 변화(drift)를 없애는 처리. 코드의 `high_pass=0.01`은 0.01 Hz(100초에 한 번)보다 느린 변화를 없앤다는 뜻입니다.
+- **fMRIPrep**: fMRI 영상을 분석하기 전에 머리 움직임 보정, 표준 뇌 공간 맞추기 등을 한꺼번에 해 주는 공개 전처리 프로그램.
+- **confounds 회귀**: 머리 움직임처럼 뇌 활동이 아닌 신호를 회귀로 시계열에서 빼는 처리. 이 챌린지의 노트북은 하지 않습니다.
 
 ## 나와 연구의 fit 돌아보기
 
