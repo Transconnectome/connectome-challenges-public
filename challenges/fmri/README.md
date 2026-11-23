@@ -16,7 +16,7 @@
 설치는 [시작 안내](../../START_HERE.md#4-설치와-첫-실행-30분-안팎)를 따릅니다. 이 폴더에서:
 
 ```bash
-python generate_synthetic_fmri.py                           # data/ 에 생성, 20초 안팎
+python generate_synthetic_fmri.py                           # data/ 에 생성, 20초~1분
 python generate_synthetic_fmri.py --seed 7 --out data_seed7   # 다른 데이터
 ```
 
