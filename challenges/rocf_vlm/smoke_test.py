@@ -1,4 +1,4 @@
-"""ROCF 특권 정보 활용 학습(Learning Using Privileged Information) 아밀로이드 예측 파이프라인 단일 실행 규격 점검기.
+"""ROCF 특권 정보 활용 학습(Learning Using Privileged Information) 아밀로이드 예측 파이프라인 실행 규격 점검기.
 
     python smoke_test.py                                   # 현재 폴더의 run_pipeline.py (없으면 starter_pipeline.py)
     python smoke_test.py --pipeline run_pipeline.py --device cpu
@@ -7,15 +7,14 @@
 점검 항목:
     (a) 파이프라인 폴더에 사전 학습 가중치·직렬화 파일(.pt .pth .safetensors .ckpt .onnx .bin .pkl .joblib)이 없는지
     (b) 중립 폴더명(eval_run_01)의 합성 코호트(N=100, test는 ROCF 그림·과정 전용, ground_truth.json 삭제)에서
-        오프라인(OPENROUTER_API_KEY="")으로 실행해 predictions.csv / summary.json 규격과
+        오프라인(OPENROUTER_API_KEY="")으로 실행해 predictions.csv(subject_id, y_prob) /
+        summary.json(claim_signal, method_summary) 규격과
         N=400 환산 실행 시간(상한 600초, 노트북 CPU 120초 이내 권장)을 확인
-    (c) 중립 폴더명(eval_run_02)의 영효과(--null-effect, N=120) 데이터에서 규격을 확인하고 거짓 양성 주장 시 경고
 """
 from __future__ import annotations
 
 import argparse
 import json
-import math
 import os
 import shutil
 import subprocess
@@ -29,20 +28,10 @@ GENERATOR = HERE / "generate_synthetic_rocf.py"
 
 BANNED_SUFFIXES = {".pt", ".pth", ".safetensors", ".ckpt", ".onnx", ".bin", ".pkl", ".joblib"}
 IGNORED_DIR_NAMES = {"outputs", "submissions", ".git", "__pycache__", ".venv", ".ipynb_checkpoints"}
-REQUIRED_KEYS = (
-    "cv_auroc_pooled",
-    "cv_auroc_cu",
-    "cv_auroc_mci",
-    "cv_within_dx_auroc",
-    "cv_within_dx_auroc_ci95",
-    "cv_shuffle_within_dx_auroc",
-    "claim_true_amyloid_signal",
-)
 FULL_N = 400
 RUNTIME_LIMIT_SEC = 600.0
 CPU_RECOMMENDED_SEC = 120.0
 SMOKE_N = 100
-NULL_N = 120
 
 
 class SmokeFailure(RuntimeError):
@@ -84,10 +73,8 @@ def find_weight_files(root: Path) -> list[Path]:
     return sorted(hits)
 
 
-def generate_cohort(out_dir: Path, seed: int, n_subjects: int, null_effect: bool) -> None:
+def generate_cohort(out_dir: Path, seed: int, n_subjects: int) -> None:
     cmd = [sys.executable, str(GENERATOR), "--seed", str(seed), "--n-subjects", str(n_subjects), "--out", str(out_dir)]
-    if null_effect:
-        cmd.append("--null-effect")
     res = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
     if res.returncode != 0:
         raise SmokeFailure(f"합성 데이터 생성 실패:\n{res.stderr[-2000:]}")
@@ -146,23 +133,17 @@ def check_outputs(data_dir: Path, out_dir: Path) -> dict:
     if not sum_path.exists():
         raise SmokeFailure("summary.json이 없습니다.")
     summary = json.loads(sum_path.read_text(encoding="utf-8"))
-    missing = [k for k in REQUIRED_KEYS if k not in summary]
-    if missing:
-        raise SmokeFailure(f"summary.json 필수 키 누락: {missing}")
-    if not isinstance(summary["claim_true_amyloid_signal"], bool):
-        raise SmokeFailure("claim_true_amyloid_signal은 true/false(bool)여야 합니다.")
-    ci = summary["cv_within_dx_auroc_ci95"]
-    if not (isinstance(ci, list) and len(ci) == 2 and all(isinstance(v, (int, float)) for v in ci)):
-        raise SmokeFailure("cv_within_dx_auroc_ci95는 [하한, 상한] 숫자 2개 목록이어야 합니다.")
-    for key in REQUIRED_KEYS[:6]:
-        if key == "cv_within_dx_auroc_ci95":
-            continue
-        val = summary[key]
-        if not isinstance(val, (int, float)) or isinstance(val, bool):
-            raise SmokeFailure(f"{key}는 숫자여야 합니다.")
-        if math.isnan(float(val)) and key not in ("cv_auroc_cu", "cv_auroc_mci"):
-            raise SmokeFailure(f"{key}가 NaN입니다.")
-    _ok(f"predictions.csv {len(pred)}행 (test 전원, NaN 없음, 0–1 범위) / summary.json 필수 키 7개")
+    if not isinstance(summary, dict):
+        raise SmokeFailure("summary.json은 JSON 객체(dict)여야 합니다.")
+    if "claim_signal" not in summary or not isinstance(summary["claim_signal"], bool):
+        raise SmokeFailure("summary.json의 claim_signal은 true/false(bool)여야 합니다.")
+    method_summary = summary.get("method_summary")
+    if not isinstance(method_summary, str) or not method_summary.strip():
+        raise SmokeFailure("summary.json의 method_summary는 비어 있지 않은 문자열(str)이어야 합니다.")
+    _ok(
+        f"predictions.csv {len(pred)}행 (test 전원, NaN 없음, 0–1 범위) / "
+        "summary.json 필수 키(claim_signal, method_summary) 확인"
+    )
     return summary
 
 
@@ -195,15 +176,14 @@ def main() -> int:
         # (b) 중립 폴더명(eval_run_01) 실행 + 시간 환산
         data_1 = tmp_root / "eval_run_01" / "input"
         out_1 = tmp_root / "eval_run_01" / "output"
-        generate_cohort(data_1, args.seed, SMOKE_N, null_effect=False)
+        generate_cohort(data_1, args.seed, SMOKE_N)
         _ok(f"합성 코호트 N={SMOKE_N} 생성 (test ROCF 전용, ground_truth.json 삭제)")
         elapsed = run_pipeline(pipeline, data_1, out_1, args.device, timeout=RUNTIME_LIMIT_SEC)
         summary = check_outputs(data_1, out_1)
         projected = elapsed * FULL_N / SMOKE_N
         print(
             f"실행 시간 {elapsed:.1f}초 → N={FULL_N} 환산 약 {projected:.1f}초 (상한 {RUNTIME_LIMIT_SEC:.0f}초) | "
-            f"전체 AUROC {summary['cv_auroc_pooled']}, 진단군 내 AUROC {summary['cv_within_dx_auroc']}, "
-            f"claim {summary['claim_true_amyloid_signal']}"
+            f"claim_signal={summary['claim_signal']}"
         )
         if projected >= RUNTIME_LIMIT_SEC:
             raise SmokeFailure(f"N={FULL_N} 환산 실행 시간이 {RUNTIME_LIMIT_SEC:.0f}초를 넘습니다.")
@@ -213,21 +193,6 @@ def main() -> int:
                 "면접장 즉석 재실행을 위해 경량화를 권장합니다."
             )
         _ok("실행 시간 상한 통과")
-
-        # (c) 중립 폴더명(eval_run_02) 영효과 검증: 경로명 힌트 없음
-        data_2 = tmp_root / "eval_run_02" / "input"
-        out_2 = tmp_root / "eval_run_02" / "output"
-        generate_cohort(data_2, args.seed + 1, NULL_N, null_effect=True)
-        run_pipeline(pipeline, data_2, out_2, args.device, timeout=RUNTIME_LIMIT_SEC)
-        null_summary = check_outputs(data_2, out_2)
-        if null_summary["claim_true_amyloid_signal"]:
-            _warn(
-                f"영효과(N={NULL_N}) 데이터에서 claim_true_amyloid_signal=true 입니다 "
-                f"(진단군 내 AUROC {null_summary['cv_within_dx_auroc']}, CI {null_summary['cv_within_dx_auroc_ci95']}). "
-                "판정 규칙이 거짓 양성에 취약할 수 있습니다."
-            )
-        else:
-            _ok(f"영효과 데이터에서 신호를 주장하지 않음 (진단군 내 AUROC {null_summary['cv_within_dx_auroc']})")
     except SmokeFailure as exc:
         print(f"[FAIL] {exc}")
         return 1

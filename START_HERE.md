@@ -15,7 +15,7 @@
 | --- | --- | --- |
 | [EEG · 뇌파에서 눈 깜빡임 흔적 찾아보기](challenges/eeg.md) | 뇌파 그리기, 아티팩트 찾기 | L1 |
 | [fMRI · 뇌 영역의 신호는 함께 움직일까?](challenges/fmri.md) | 영역 간 상관, 머리 움직임 보정 | L1 |
-| [ROCF VLM · 복합도형 그리기 과정으로 아밀로이드 베타 예측하기](challenges/rocf_vlm.md) | 시공간 그리기 과정 모델링, 진단군 교란 통제, 셔플·영효과 반증 검증 | L2 |
+| [ROCF VLM · 복합도형 그리기 과정으로 아밀로이드 베타 예측하기](challenges/rocf_vlm.md) | 시공간 그리기 과정 모델링, 진단군 교란 통제, 신호 진위 자체 검증 | L2 |
 
 예상 시간(추정): L1 챌린지는 합성 데이터 과제 2–3시간 + 실제 공개 데이터 단계(선택) 약 1시간, L2 챌린지(ROCF VLM)는 기본 과제·반증 검증 4–6시간(자율 모델링·확장 실험 별도).
 
@@ -77,7 +77,7 @@ ROCF VLM 챌린지(L2)도 할 거라면 이어서 아래 패키지를 설치합�
 pip install -r challenges/rocf_vlm/requirements.txt
 ```
 
-**선택: `OPENROUTER_API_KEY` 환경변수 설정 (ROCF VLM 시각 탐색 시에만 필요).** OpenRouter API 키는 외부 시각-언어 모델(VLM)을 불러 그리기 과정 패널(`render_process_panel`)의 시각 패턴을 탐색해 보는 개발용 열쇠입니다. 기본 기준선(`starter_pipeline.py`)과 규격 점검(`smoke_test.py`)에는 **API 키가 전혀 필요 없으며**, 최종 제출용 `run_pipeline.py`도 반드시 외부 API 없이 오프라인(`OPENROUTER_API_KEY=""`)으로 끝까지 실행되어야 합니다. 개발 중에 `rocf_vlm_synthetic_example.ipynb`의 선택 셀로 VLM 탐색을 해 볼 때만 터미널에서 환경변수로 설정하세요(Windows PowerShell이면 `$env:OPENROUTER_API_KEY="발급받은_키"`).
+**선택: `OPENROUTER_API_KEY` 환경변수 설정 (ROCF VLM 시각 탐색 시에만 필요).** OpenRouter API 키는 외부 시각-언어 모델(VLM)을 불러 그리기 과정 패널의 시각 패턴을 탐색해 보는 개발용 열쇠입니다. 기본 기준선(`starter_pipeline.py`)과 규격 점검(`smoke_test.py`)에는 **API 키가 전혀 필요 없으며**, 최종 제출용 `run_pipeline.py`도 반드시 외부 API 없이 오프라인(`OPENROUTER_API_KEY=""`)으로 끝까지 실행되어야 합니다. 개발 중에 `rocf_vlm_synthetic_example.ipynb`의 선택 셀로 VLM 탐색을 해 볼 때만 터미널에서 환경변수로 설정하세요(Windows PowerShell이면 `$env:OPENROUTER_API_KEY="발급받은_키"`).
 
 ```bash
 export OPENROUTER_API_KEY="발급받은_키"
@@ -184,7 +184,7 @@ git push -u origin main
 - **가상환경(venv)**: 한 과제에 필요한 Python 패키지를 따로 담아 두는 폴더.
 - **노트북(Jupyter)**: 코드, 그림, 설명을 한 문서에서 차례로 실행하는 파일(`.ipynb`).
 - **상관계수**: 두 신호가 함께 오르내리는 정도. −1에서 1 사이 값.
-- **교란 변수(Confounding)**: 예측하려는 대상(`amyloid_pos`)과 입력 특징 양쪽에 모두 연결되어 있어, 실제 관계가 없는데도 모델이 잘 맞히는 것처럼 착시를 일으키는 제3의 변수(예: `MCI` 진단 여부, fMRI의 머리 움직임).
+- **교란 변수(Confounding)**: 예측하려는 대상(예: 아밀로이드 베타 양성 여부)과 입력 특징 양쪽에 모두 연결되어 있어, 실제 관계가 없는데도 모델이 잘 맞히는 것처럼 착시를 일으키는 제3의 변수(예: `MCI` 진단 여부, fMRI의 머리 움직임).
 - **천장효과(Ceiling effect)**: 과제가 특정 집단에게 쉬워 점수가 만점 근처에 몰리면서, 점수나 정적 그림만으로는 그 집단 내부의 차이를 구분하기 어려워지는 현상.
 - **ROCF(복합도형 검사)**: 복잡한 기하 도형(18개 요소, 만점 36점)을 보고 따라 그린 뒤(`Copy`) 기억에 의존해 다시 그리는(`Delayed Recall`) 신경심리검사.
 - **CU(인지정상) / MCI(경도인지장애)**: `CU`는 인지 기능이 정상 범위인 집단, `MCI`는 객관적 인지 저하가 시작된 집단입니다.
@@ -192,6 +192,6 @@ git push -u origin main
 - **AUROC**: 모델이 양성(예: `Aβ+`)과 음성(`Aβ-`)을 얼마나 잘 구분하는지 나타내는 지표. `0.50`은 동전 던지기(무작위), `1.00`은 완벽한 분류입니다.
 - **교차검증(Cross-Validation) / 홀드아웃(Holdout)**: 학습 데이터를 여러 조각(폴드)으로 나누어 번갈아 검증해 일반화 성능을 재는 방법이 교차검증이고, 모델 선택 과정에서 끝까지 보지 않고 따로 떼어 둔 시험 표본이 홀드아웃(`test`)입니다.
 - **특권 정보 활용 학습(Learning Using Privileged Information)**: 학습(`train`) 단계에서는 뇌영상·임상 지표 등 풍부한 특권 정보를 함께 써서 모델을 훈련하되, 실제 평가(`test`) 단계에서는 저비용 입력(ROCF 그림·펜 궤적)만으로 예측하게 하는 학습 방식입니다.
-- **반증 대조군(Falsification control)**: 모델이 진짜 신호가 아니라 가짜 단서(교란·우연)에 기댔는지 걸러 내기 위해 일부러 핵심 신호를 망가뜨려 보는 실험(예: 획 셔플 대조군, `--null-effect` 영효과 데이터).
+- **반증 대조군(Falsification control)**: 모델이 진짜 신호가 아니라 가짜 단서(교란·우연)에 기댔는지 걸러 내기 위해 일부러 핵심 과정 단서를 제거하거나 순서를 교란해 보는 대조 실험.
 - **VLM(시각-언어 모델) / API 키(`OPENROUTER_API_KEY`)**: 그림과 텍스트 질문을 함께 읽고 답하는 AI 모델이 VLM이며, 코드에서 외부 VLM 서버를 호출할 때 쓰는 개인 인증 문자열이 API 키입니다. 코드나 Git에 절대 올리면 안 됩니다.
 - **Git / 비공개(Private) 저장소**: 코드 변경 이력을 기록·공유하는 도구가 Git이고, GitHub에서 나(와 초대한 채점자)만 볼 수 있게 잠근 코드 공간이 **Private** 저장소입니다(`Public`은 전 세계에 공개됩니다).
