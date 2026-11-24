@@ -6,22 +6,22 @@
 
 ## 1. 폴더 및 파일 구조
 
-### 1.1 `challenges/rocf_vlm/` 코드 파일
+### 1.1 `challenges/rocf_vlm/` 제공 파일
 
 | 파일 | 역할 |
 | --- | --- |
-| `rocf_synth.py` | 18개 ROCF 도형 요소의 기하 좌표, 5 Hz 펜 궤적 및 합성 뇌·임상 지표 생성, 정적 흑백 이미지·과정 진행 패널 렌더링, 층화 AUROC 계산 유틸리티 |
-| `generate_synthetic_rocf.py` | 합성 ROCF 코호트(`participants.csv`, `train_privileged.csv`, `images/`, `strokes/`, `ground_truth.json`) 생성 스크립트 |
+| `data.zip` | 사전 생성된 블라인드 합성 ROCF 코호트(`N=400`, `train` 280명 / `test` 120명, `test` 정답 비공개) |
+| `rocf_viz.py` | 5 Hz 펜 궤적 과정 진행 패널 렌더링(`render_process_panel`) 및 진단군 내 층화 AUROC 계산(`compute_within_dx_metrics`) 유틸리티 |
 | `starter_pipeline.py` | 정적 흑백 그림만 사용하는 최소 기준선 파이프라인 (`predictions.csv` 및 `summary.json` 출력) |
 | `smoke_test.py` | 단일 실행 규격(사전 학습 가중치 반입 금지, 오프라인 실행, 최소 출력 형식, 600초 이내 실행 시간) 자동 점검 스크립트 |
-| `rocf_vlm_synthetic_example.ipynb` | 데이터 탐색과 기준선 동작을 따라 해 보는 예제 노트북 |
+| `rocf_vlm_synthetic_example.ipynb` | 데이터 탐색, 5 Hz 과정 시각화, 학습 데이터 교차검증 예제 노트북 |
 | `requirements.txt` | 실행에 필요한 Python 패키지 목록 |
-| `README.md` | 합성 데이터 생성 및 설계 한계 요약 |
+| `README.md` | 제공 합성 데이터 안내 및 설계 한계 요약 |
 | `CODEBOOK.md` | 이 문서(데이터 스키마·입출력 규격·용어 사전) |
 
-### 1.2 생성되는 `data/` 폴더 구조 (`N=400` 기준)
+### 1.2 `data.zip` 압축 해제 후 `data/` 폴더 구조 (`N=400`)
 
-`generate_synthetic_rocf.py`를 실행하면 전체 400명을 70/30 비율(`train` 280명, `test` 120명)로 층화 분할해 다음 파일들을 생성합니다.
+`python -m zipfile -e data.zip .`를 실행하면 전체 400명이 70/30 비율(`train` 280명, `test` 120명)로 층화 분할된 다음 파일들이 풀립니다.
 
 | 경로 | 행·크기 | 접근 구분 (`train` vs `test`) | 설명 |
 | --- | --- | --- | --- |
@@ -29,7 +29,8 @@
 | `data/train_privileged.csv` | 280행 × 16열 | **`train` 280명만 포함 (`test` 0행)** | 학습 전용 아밀로이드·임상·채점·뇌영상 지표 |
 | `data/images/{subject_id}_copy.png`, `_recall.png` | 800장 (`672×480`) | `train`·`test` 모두 제공 | 모사(`copy`) 및 지연 회상(`recall`) 완성 흑백 그림 |
 | `data/strokes/{subject_id}_copy.csv`, `_recall.csv` | 800개 (5 Hz) | `train`·`test` 모두 제공 | 초당 5회(0.20초 간격) 펜 좌표 및 접촉 상태 시계열 |
-| `data/ground_truth.json` | JSON 1개 | 블라인드 `test` 사후 점검 전용 | **파이프라인 코드(`run_pipeline.py`) 내 열람 절대 금지** |
+
+평가(`test`) 참가자 120명의 아밀로이드 정답과 진단군은 공개 데이터에 포함되어 있지 않으며, 모델 성능 검증은 `train` 280명 내부 교차검증과 자체 대조 검증으로 수행합니다.
 
 ---
 
@@ -37,19 +38,18 @@
 
 ### 2.1 공개 CLI 인자
 
-- **합성 데이터 생성 (`generate_synthetic_rocf.py`)**
-  - `--seed <int>`: 난수 시드 (기본값 `42`). 같은 시드를 주면 동일한 데이터가 재현됩니다.
-  - `--n-subjects <int>`: 전체 참가자 수 (기본값 `400`).
-  - `--out <path>`: 생성 데이터를 저장할 폴더 경로 (기본값 `data`).
+- **데이터 압축 해제**
+  - `python -m zipfile -e data.zip .`: 현재 폴더 아래 `data/`에 제공 합성 데이터를 풉니다.
 - **파이프라인 실행 (`starter_pipeline.py`, `run_pipeline.py`)**
   - `--data-dir <path>`: 입력 데이터 폴더 경로 (기본값 `data`).
   - `--out-dir <path>`: `predictions.csv`와 `summary.json`을 저장할 출력 폴더 경로.
   - `--device {cpu,cuda}`: 연산 장치 선택 (기본값 `cpu`).
-  - `--seed <int>`: 파이프라인 내부 난수 시드 (기본값 `42`).
+  - `--seed <int>`: 파이프라인 내부 학습·교차검증 난수 시드 (기본값 `42`).
 - **규격 자동 점검 (`smoke_test.py`)**
   - `--pipeline <path>`: 점검할 파이프라인 파일 경로 (기본값: 현재 폴더의 `run_pipeline.py`, 없으면 `starter_pipeline.py`).
+  - `--data-dir <path>`: 입력 데이터 폴더 또는 `data.zip` 경로 (기본값: 현재 폴더의 `data/` 또는 `data.zip` 자동 탐색).
   - `--device {cpu,cuda}`: 점검 시 전달할 장치 옵션 (기본값 `cpu`).
-  - `--seed <int>`: 점검용 임시 합성 데이터 시드 (기본값 `123`).
+  - `--seed <int>`: 점검용 축소 코호트 추출 및 실행 시드 (기본값 `123`).
   - `--keep`: 점검 후 임시 작업 폴더를 삭제하지 않고 남깁니다.
 
 ### 2.2 실행 및 보안 제약
@@ -71,26 +71,26 @@
 
 ### 3.2 `train_privileged.csv` (16개 열 — `train` 전용)
 
-학습(`split == "train"`) 참가자 280명에 대해서만 제공되는 특권 정보 표입니다. 평가(`test`) 참가자 행은 전혀 포함되지 않습니다. 표형 변수에는 간혹 결측치(`NaN`)가 섞일 수 있으므로, 파이프라인에서 특권 열을 사용할 때는 중앙값 대치(imputation) 같은 결측치 처리를 포함하는 것이 안전합니다.
+학습(`split == "train"`) 참가자 280명에 대해서만 제공되는 특권 정보 표입니다. 평가(`test`) 참가자 행은 전혀 포함되지 않습니다. 다른 평가 데이터에서는 표형 변수에 결측치(`NaN`)가 섞일 수 있으므로, 파이프라인에서 특권 열을 사용할 때는 중앙값 대치(imputation) 같은 결측치 처리를 포함하는 것이 안전합니다.
 
-| # | 열 이름 | 자료형 | 단위 / 허용 값 | 생성 범위 (`seed=42` 기준) | 설명 |
+| # | 열 이름 | 자료형 | 단위 / 허용 값 | 제공 `train` 분포 요약 (`N=280`) | 설명 |
 | --- | --- | --- | --- | --- | --- |
 | 1 | `subject_id` | `str` | `sub-0001` .. | 학습 280명 고유 ID | 참가자 식별자 |
-| 2 | `amyloid_pos` | `int` | `0` 또는 `1` | `0`, `1` (양성률 약 0.43) | 아밀로이드 베타 PET 양성 여부 (예측 목표) |
-| 3 | `amyloid_centiloid` | `float` | `CL` (Centiloid) | 음성 `[-5.0, 24.5]`, 양성 `[25.5, 130.0]` | 표준화된 연속형 아밀로이드 축적량 |
-| 4 | `diagnosis` | `str` | `"CU"`, `"MCI"` | `"CU"`, `"MCI"` | 임상 진단군 (인지정상 / 경도인지장애) |
-| 5 | `age` | `float` | `years` (세) | `[58.0, 88.0]` (평균 ~71.5) | 참가자 연령 |
+| 2 | `amyloid_pos` | `int` | `0` 또는 `1` | `0`, `1` (양성률 약 `0.41`) | 아밀로이드 베타 PET 양성 여부 (예측 목표) |
+| 3 | `amyloid_centiloid` | `float` | `CL` (Centiloid) | `[-5.0, 113.7]` (평균 `32.6`) | 표준화된 연속형 아밀로이드 축적량 |
+| 4 | `diagnosis` | `str` | `"CU"`, `"MCI"` | `CU` 182명, `MCI` 98명 | 임상 진단군 (인지정상 / 경도인지장애) |
+| 5 | `age` | `float` | `years` (세) | `[58.0, 88.0]` (평균 `71.1`) | 참가자 연령 |
 | 6 | `sex` | `str` | `"F"`, `"M"` | `"F"`, `"M"` | 성별 |
-| 7 | `edu_years` | `float` | `years` (년) | `[4.0, 20.0]` (평균 ~12.5) | 정규 교육 연수 |
+| 7 | `edu_years` | `float` | `years` (년) | `[4.0, 20.0]` (평균 `12.7`) | 정규 교육 연수 |
 | 8 | `apoe4_count` | `int` | `0`, `1`, `2` | `{0, 1, 2}` | 알츠하이머병 유전 위험 대립유전자(*APOE* ε4) 보유 개수 |
-| 9 | `copy_score_36` | `float` | `points` (0.5점 단위) | `[0.0, 36.0]` (`CU` 33–36, `MCI` 16–30) | ROCF 모사(Copy) 정적 채점 총점 (36점 만점) |
-| 10 | `recall_score_36` | `float` | `points` (0.5점 단위) | `[0.0, 36.0]` (`CU` 31–35.5, `MCI` 4–21) | ROCF 지연 회상(Delayed Recall) 정적 채점 총점 |
-| 11 | `hippocampal_md` | `float` | `10^-3 mm^2/s` | `[0.720, 1.350]` | 확산강조 MRI 기반 해마 평균확산도 (조기 미세구조 지표) |
-| 12 | `hippocampal_vol` | `float` | `mL` (`cm^3`) | `[2.100, 4.650]` | 구조 MRI 기반 해마 부피 (거시 위축 지표) |
-| 13 | `entorhinal_thickness` | `float` | `mm` | `[2.050, 4.050]` | 내후각 피질 두께 (거시 위축 지표) |
-| 14 | `precuneus_md` | `float` | `10^-3 mm^2/s` | `[0.680, 1.280]` | 설전부(Precuneus) 평균확산도 (조기 미세구조 지표) |
-| 15 | `parietal_thickness` | `float` | `mm` | `[1.650, 2.800]` | 두정엽 피질 두께 (거시 위축 지표) |
-| 16 | `wmh_vol_log` | `float` | `log-volume` | `[-0.600, 2.200]` | 뇌 백질 고신호(WMH) 부피 로그값 (혈관성 변화 지표) |
+| 9 | `copy_score_36` | `float` | `points` (0.5점 단위) | `[16.0, 36.0]` (`CU` 33–36, `MCI` 16–30) | ROCF 모사(Copy) 정적 채점 총점 (36점 만점) |
+| 10 | `recall_score_36` | `float` | `points` (0.5점 단위) | `[4.5, 35.0]` (`CU` 31–35.5, `MCI` 4–21) | ROCF 지연 회상(Delayed Recall) 정적 채점 총점 |
+| 11 | `hippocampal_md` | `float` | `10^-3 mm^2/s` | `[0.764, 1.108]` (평균 `0.902`) | 확산강조 MRI 기반 해마 평균확산도 (조기 미세구조 지표) |
+| 12 | `hippocampal_vol` | `float` | `mL` (`cm^3`) | `[2.611, 4.335]` (평균 `3.602`) | 구조 MRI 기반 해마 부피 (거시 위축 지표) |
+| 13 | `entorhinal_thickness` | `float` | `mm` | `[2.503, 3.755]` (평균 `3.194`) | 내후각 피질 두께 (거시 위축 지표) |
+| 14 | `precuneus_md` | `float` | `10^-3 mm^2/s` | `[0.689, 1.020]` (평균 `0.836`) | 설전부(Precuneus) 평균확산도 (조기 미세구조 지표) |
+| 15 | `parietal_thickness` | `float` | `mm` | `[1.927, 2.554]` (평균 `2.254`) | 두정엽 피질 두께 (거시 위축 지표) |
+| 16 | `wmh_vol_log` | `float` | `log-volume` | `[-0.600, 1.819]` (평균 `0.503`) | 뇌 백질 고신호(WMH) 부피 로그값 (혈관성 변화 지표) |
 
 ### 3.3 `images/{subject_id}_{copy,recall}.png`
 

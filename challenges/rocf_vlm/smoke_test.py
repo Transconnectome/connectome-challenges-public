@@ -6,9 +6,9 @@
 
 점검 항목:
     (a) 파이프라인 폴더에 사전 학습 가중치·직렬화 파일(.pt .pth .safetensors .ckpt .onnx .bin .pkl .joblib)이 없는지
-    (b) 중립 폴더명(eval_run_01)의 합성 코호트(N=100, test는 ROCF 그림·과정 전용, ground_truth.json 삭제)에서
-        오프라인(OPENROUTER_API_KEY="")으로 실행해 predictions.csv(subject_id, y_prob) /
-        summary.json(claim_signal, method_summary) 규격과
+    (b) 제공된 합성 데이터(data/ 또는 data.zip)에서 중립 폴더명(eval_run_01)의 축소 코호트(N=100, train 70 / test 30,
+        test는 ROCF 그림·과정 전용)를 구성해 오프라인(OPENROUTER_API_KEY="")으로 실행하고,
+        predictions.csv(subject_id, y_prob) / summary.json(claim_signal, method_summary) 규격과
         N=400 환산 실행 시간(상한 600초, 노트북 CPU 120초 이내 권장)을 확인
 """
 from __future__ import annotations
@@ -21,17 +21,19 @@ import subprocess
 import sys
 import tempfile
 import time
+import zipfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-GENERATOR = HERE / "generate_synthetic_rocf.py"
 
 BANNED_SUFFIXES = {".pt", ".pth", ".safetensors", ".ckpt", ".onnx", ".bin", ".pkl", ".joblib"}
 IGNORED_DIR_NAMES = {"outputs", "submissions", ".git", "__pycache__", ".venv", ".ipynb_checkpoints"}
 FULL_N = 400
 RUNTIME_LIMIT_SEC = 600.0
 CPU_RECOMMENDED_SEC = 120.0
-SMOKE_N = 100
+SMOKE_N_TRAIN = 70
+SMOKE_N_TEST = 30
+SMOKE_N = SMOKE_N_TRAIN + SMOKE_N_TEST
 
 
 class SmokeFailure(RuntimeError):
@@ -73,24 +75,120 @@ def find_weight_files(root: Path) -> list[Path]:
     return sorted(hits)
 
 
-def generate_cohort(out_dir: Path, seed: int, n_subjects: int) -> None:
-    cmd = [sys.executable, str(GENERATOR), "--seed", str(seed), "--n-subjects", str(n_subjects), "--out", str(out_dir)]
-    res = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-    if res.returncode != 0:
-        raise SmokeFailure(f"합성 데이터 생성 실패:\n{res.stderr[-2000:]}")
-    gt = out_dir / "ground_truth.json"
-    if gt.exists():
-        gt.unlink()  # 파이프라인이 정답 파일 없이도 돌아가는지 확인
+def _locate_source_data(data_arg: str | None, scratch_root: Path) -> Path:
+    """제공된 데이터 폴더(data/) 또는 압축 파일(data.zip)을 찾아 입력 디렉터리를 반환한다."""
+    candidates: list[Path] = []
+    if data_arg:
+        candidates.append(Path(data_arg).expanduser().resolve())
+    else:
+        candidates.extend([
+            Path.cwd() / "data",
+            HERE / "data",
+            Path.cwd() / "data.zip",
+            HERE / "data.zip",
+            HERE.parents[1] / "public" / "challenges" / "rocf_vlm" / "data.zip",
+        ])
+
+    for cand in candidates:
+        if cand.is_dir() and (cand / "participants.csv").is_file():
+            return cand
+        if cand.is_file() and cand.suffix.lower() == ".zip":
+            unpack_dir = scratch_root / "unpacked_source"
+            with zipfile.ZipFile(cand, "r") as zf:
+                zf.extractall(unpack_dir)
+            inner = unpack_dir / "data"
+            if (inner / "participants.csv").is_file():
+                return inner
+            if (unpack_dir / "participants.csv").is_file():
+                return unpack_dir
+            raise SmokeFailure(f"압축 파일({cand.name}) 안에 participants.csv가 없습니다.")
+
+    raise SmokeFailure(
+        "합성 데이터를 찾을 수 없습니다. `python -m zipfile -e data.zip .`로 압축을 풀거나 "
+        "`--data-dir <데이터 폴더 또는 data.zip>` 옵션을 지정하세요."
+    )
+
+
+def prepare_smoke_cohort(src_dir: Path, out_dir: Path, seed: int) -> int:
+    """제공된 데이터에서 중립 폴더(out_dir)로 N=100(train 70 / test 30) 부분 코호트를 구성한다."""
+    import numpy as np
+    import pandas as pd
+
     for name in ("participants.csv", "train_privileged.csv", "images", "strokes"):
-        if not (out_dir / name).exists():
-            raise SmokeFailure(f"생성된 데이터에 {name}이(가) 없습니다.")
+        if not (src_dir / name).exists():
+            raise SmokeFailure(f"원본 데이터 폴더에 {name}이(가) 없습니다.")
+
+    part = pd.read_csv(src_dir / "participants.csv", dtype={"subject_id": str})
+    priv = pd.read_csv(src_dir / "train_privileged.csv", dtype={"subject_id": str})
+    if list(part.columns) != ["subject_id", "split"]:
+        raise SmokeFailure(f"participants.csv 규격 오류: {list(part.columns)}")
+
+    train_pool = part.loc[part["split"] == "train", "subject_id"].astype(str).tolist()
+    test_pool = part.loc[part["split"] == "test", "subject_id"].astype(str).tolist()
+    if len(train_pool) < 10 or len(test_pool) < 4:
+        raise SmokeFailure(f"표본 수가 너무 적습니다 (train={len(train_pool)}, test={len(test_pool)}).")
+
+    rng = np.random.default_rng(seed)
+    n_train = min(SMOKE_N_TRAIN, len(train_pool))
+    n_test = min(SMOKE_N_TEST, len(test_pool))
+
+    # train은 진단군×아밀로이드 층을 유지하며 추출
+    priv_idx = priv.set_index("subject_id").loc[train_pool].reset_index()
+    strata = priv_idx["diagnosis"].astype(str) + "_" + priv_idx["amyloid_pos"].astype(str)
+    selected_train: list[str] = []
+    if n_train < len(train_pool):
+        for _, grp in priv_idx.groupby(strata):
+            sids = grp["subject_id"].astype(str).tolist()
+            k = max(1, int(round(n_train * len(sids) / len(train_pool))))
+            k = min(k, len(sids))
+            chosen = rng.choice(sids, size=k, replace=False).tolist()
+            selected_train.extend(chosen)
+        selected_train = sorted(set(selected_train))
+        if len(selected_train) > n_train:
+            selected_train = sorted(rng.choice(selected_train, size=n_train, replace=False).tolist())
+        elif len(selected_train) < n_train:
+            rem = [s for s in train_pool if s not in set(selected_train)]
+            extra = rng.choice(rem, size=n_train - len(selected_train), replace=False).tolist()
+            selected_train = sorted(selected_train + extra)
+    else:
+        selected_train = sorted(train_pool)
+
+    selected_test = sorted(rng.choice(test_pool, size=n_test, replace=False).tolist())
+    selected_set = set(selected_train) | set(selected_test)
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "images").mkdir(parents=True, exist_ok=True)
+    (out_dir / "strokes").mkdir(parents=True, exist_ok=True)
+
+    sub_part = part.loc[part["subject_id"].isin(selected_set)].reset_index(drop=True)
+    sub_priv = priv.loc[priv["subject_id"].isin(set(selected_train))].reset_index(drop=True)
+    sub_part.to_csv(out_dir / "participants.csv", index=False)
+    sub_priv.to_csv(out_dir / "train_privileged.csv", index=False)
+
+    for sid in sub_part["subject_id"].astype(str):
+        for trial in ("copy", "recall"):
+            shutil.copyfile(src_dir / "images" / f"{sid}_{trial}.png", out_dir / "images" / f"{sid}_{trial}.png")
+            shutil.copyfile(src_dir / "strokes" / f"{sid}_{trial}.csv", out_dir / "strokes" / f"{sid}_{trial}.csv")
+
+    return int(len(sub_part))
 
 
-def run_pipeline(pipeline: Path, data_dir: Path, out_dir: Path, device: str, timeout: float) -> float:
+def run_pipeline(pipeline: Path, data_dir: Path, out_dir: Path, device: str, seed: int, timeout: float) -> float:
     env = dict(os.environ)
     env["OPENROUTER_API_KEY"] = ""  # 외부 API 없이 오프라인으로 동작해야 함
     env["PYTHONPATH"] = os.pathsep.join(p for p in (str(HERE), env.get("PYTHONPATH", "")) if p)
-    cmd = [sys.executable, str(pipeline), "--data-dir", str(data_dir), "--out-dir", str(out_dir), "--device", device]
+    cmd = [
+        sys.executable,
+        str(pipeline),
+        "--data-dir",
+        str(data_dir),
+        "--out-dir",
+        str(out_dir),
+        "--device",
+        device,
+        "--seed",
+        str(seed),
+    ]
     t0 = time.perf_counter()
     try:
         res = subprocess.run(cmd, cwd=str(pipeline.parent), env=env, capture_output=True, text=True, timeout=timeout)
@@ -150,8 +248,9 @@ def check_outputs(data_dir: Path, out_dir: Path) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--pipeline", help="점검할 파이프라인 파일 (기본: 현재 폴더 run_pipeline.py, 없으면 starter_pipeline.py)")
+    parser.add_argument("--data-dir", help="입력 합성 데이터 폴더 또는 data.zip 경로 (기본: data/ 또는 data.zip 자동 탐색)")
     parser.add_argument("--device", choices=["cpu", "cuda"], default="cpu", help="파이프라인에 전달할 연산 장치")
-    parser.add_argument("--seed", type=int, default=123, help="점검용 합성 데이터 시드")
+    parser.add_argument("--seed", type=int, default=123, help="점검용 축소 코호트 추출 및 실행 시드")
     parser.add_argument("--keep", action="store_true", help="임시 폴더를 지우지 않고 남김 (디버깅용)")
     args = parser.parse_args()
 
@@ -173,14 +272,15 @@ def main() -> int:
                 "최대 사용량이 16 GB 이하인지 확인하세요."
             )
 
-        # (b) 중립 폴더명(eval_run_01) 실행 + 시간 환산
+        # (b) 중립 폴더명(eval_run_01) 축소 코호트 실행 + 시간 환산
+        src_data = _locate_source_data(args.data_dir, tmp_root)
         data_1 = tmp_root / "eval_run_01" / "input"
         out_1 = tmp_root / "eval_run_01" / "output"
-        generate_cohort(data_1, args.seed, SMOKE_N)
-        _ok(f"합성 코호트 N={SMOKE_N} 생성 (test ROCF 전용, ground_truth.json 삭제)")
-        elapsed = run_pipeline(pipeline, data_1, out_1, args.device, timeout=RUNTIME_LIMIT_SEC)
+        n_used = prepare_smoke_cohort(src_data, data_1, args.seed)
+        _ok(f"점검용 축소 코호트 N={n_used} 구성 (test ROCF 전용)")
+        elapsed = run_pipeline(pipeline, data_1, out_1, args.device, args.seed, timeout=RUNTIME_LIMIT_SEC)
         summary = check_outputs(data_1, out_1)
-        projected = elapsed * FULL_N / SMOKE_N
+        projected = elapsed * FULL_N / max(1, n_used)
         print(
             f"실행 시간 {elapsed:.1f}초 → N={FULL_N} 환산 약 {projected:.1f}초 (상한 {RUNTIME_LIMIT_SEC:.0f}초) | "
             f"claim_signal={summary['claim_signal']}"

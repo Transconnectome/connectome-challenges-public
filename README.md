@@ -43,7 +43,7 @@
 ## 진행 순서
 
 1. **설치**: Python 3.11 또는 3.12와 노트북 컴퓨터(기본 실행은 GPU 필요 없음; ROCF VLM 딥러닝 확장 시 무료 Google Colab T4 16 GB 호환)가 필요합니다. macOS·Linux에서 확인했고, Windows는 WSL(Windows에서 Linux를 쓰는 기능)을 권합니다. [시작 안내](START_HERE.md#4-설치와-첫-실행-30분-안팎)를 따라 설치하고 첫 노트북을 실행합니다.
-2. **합성 데이터와 자체 검증으로 연습**: 컴퓨터로 만든 합성 데이터에는 정답 파일이 함께 들어 있어 내 분석을 스스로 확인할 수 있습니다. L2(ROCF VLM)에서는 학습 전용 뇌·임상 정보를 보조로 활용하고, 예측이 실제 그리기 과정에 기반한 신호인지 자체 검증까지 설계합니다.
+2. **합성 데이터와 자체 검증으로 연습**: L1(EEG·fMRI)에서는 생성기로 만든 합성 데이터와 정답 파일로 내 분석을 스스로 확인합니다. L2(ROCF VLM)에서는 연구실이 미리 만들어 둔 블라인드 합성 데이터(`challenges/rocf_vlm/data.zip`, 평가 정답 비공개)를 바탕으로 학습 전용 뇌·임상 정보를 보조로 활용하고, 예측이 실제 그리기 과정에 기반한 신호인지 `train` 교차검증과 자체 대조 검증으로 점검합니다.
 3. **실제 공개 데이터로 확인 (L1 선택)**: L1 챌린지(EEG, fMRI)에서는 누구나 받을 수 있는 공개 데이터(PhysioNet EEGBCI 약 8 MB, OpenNeuro ds000228 전처리본과 뇌 지도 합계 약 50 MB)에 같은 분석을 적용하고, 합성 데이터와 무엇이 다른지 설명합니다. 실제 데이터에는 정답이 없고, 데이터마다 이용 조건과 인용 요구가 있습니다(각 챌린지 문서에 적었습니다).
 4. **정리와 공유 (자율 학습 vs 인턴십 2단계 구분)**: 자유 학습자는 그림·노트북·짧은 설명을 정리해 Issues에 공유할 수 있습니다. 단, **2026 동계 인턴십 2단계(`ROCF VLM`) 지원자는 공개 Issues나 공개 저장소에 풀이를 올리지 않고**, [시작 안내](START_HERE.md#5-결과-정리와-공유)의 비공개(Private) GitHub 저장소·채점 계정 초대·메일 제출 절차를 따릅니다.
 
@@ -58,7 +58,7 @@ challenges/eeg/         EEG 합성 데이터 생성기, 예제 노트북, 실제
 challenges/fmri.md      fMRI 챌린지 안내 (L1)
 challenges/fmri/        fMRI 합성 데이터 생성기, 예제 노트북, 실제 데이터 노트북, 합성 데이터 안내(README.md)
 challenges/rocf_vlm.md  ROCF VLM 챌린지 안내 (L2)
-challenges/rocf_vlm/    ROCF 합성 데이터 생성기, 기본 파이프라인, 규격 검증기, 예제 노트북, 코드북(CODEBOOK.md), 합성 데이터 안내(README.md)
+challenges/rocf_vlm/    사전 생성 블라인드 합성 데이터(data.zip), 시각화 도우미(rocf_viz.py), 기본 파이프라인, 규격 점검기, 예제 노트북, 코드북(CODEBOOK.md), 데이터 안내(README.md)
 CODE_OF_CONDUCT.md      이슈·댓글에서 지켜 주실 것
 assets/                 README·챌린지 안내 그림
 LICENSE, LICENSE-docs   코드(MIT)·문서(CC BY 4.0) 라이선스

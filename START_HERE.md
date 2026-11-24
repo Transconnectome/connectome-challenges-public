@@ -6,7 +6,7 @@
 
 - 실제 연구에서 쓰는 도구(Python, MNE, nilearn, scikit-learn 등)로 뇌파·fMRI·디지털 인지행동 데이터를 처음부터 끝까지 다뤄 봅니다.
 - 연구자가 자주 빠지는 함정(눈 깜빡임, 머리 움직임, 진단군 교란과 천장효과)을 직접 찾아내고 반증 대조군으로 점검합니다.
-- 먼저 **합성 데이터**로 연습합니다. 컴퓨터로 만든 데이터라서 정답 파일과 대조군이 함께 준비되어 있어 내 분석과 모델을 스스로 확인할 수 있습니다.
+- 먼저 **합성 데이터**로 연습합니다. L1 챌린지(EEG, fMRI)는 정답 파일로 분석을 스스로 확인할 수 있고, L2 챌린지(ROCF VLM)는 연구실이 미리 생성해 둔 블라인드 합성 데이터(`data.zip`, 평가 정답 비공개)에서 `train` 교차검증과 자체 대조 검증을 수행합니다.
 - L1 챌린지(EEG, fMRI)에서는 선택 단계로 **실제 공개 데이터**에 같은 분석을 적용해, 합성 데이터와 무엇이 다른지 봅니다. 실제 데이터에는 정답이 없습니다.
 
 ## 2. 챌린지 고르기
@@ -108,7 +108,7 @@ jupyter notebook eeg_synthetic_example.ipynb
 | `python3 -m venv`가 `ensurepip` 오류로 실패 | Ubuntu·WSL에서는 `sudo apt install python3-venv`로 가상환경 기능을 설치한 뒤 다시 실행합니다. |
 | `No module named 'encodings'` 또는 다른 프로젝트의 패키지가 섞여 보임 | 셸에 `PYTHONPATH`가 설정되어 있을 수 있습니다. `unset PYTHONPATH`를 실행한 뒤 `.venv` 폴더를 지우고 처음부터 다시 만듭니다. |
 | `pip install`이 실패 | `python3 --version`이 3.11이나 3.12인지 확인합니다. 더 새 버전(3.13 이상)이나 옛 버전에서는 일부 패키지가 설치되지 않을 수 있습니다. Linux ARM64라면 C++ 컴파일러를 설치했는지(③) 확인합니다. |
-| `No such file or directory: data/...` | 노트북과 같은 폴더에서 `generate_synthetic_*.py`를 먼저 실행했는지 확인합니다. |
+| `No such file or directory: data/...` | L1(EEG·fMRI)은 노트북과 같은 폴더에서 `generate_synthetic_*.py`를 실행했는지, L2(ROCF VLM)는 `python -m zipfile -e data.zip .`로 압축을 풀었는지 확인합니다. |
 | `python: command not found` | 가상환경이 꺼진 상태입니다. 저장소 맨 위 폴더에서 `source .venv/bin/activate`를 실행합니다. |
 | `jupyter: command not found` | 가상환경이 켜져 있는지(`(.venv)` 표시) 확인합니다. |
 
